@@ -11,8 +11,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -26,6 +26,7 @@ import com.example.clickcap.constants.ScreenNames
 @Composable
 fun ScanDevicesScreen(navController: NavController) {
     val bluetoothAdapter: BluetoothAdapter? = BluetoothAdapter.getDefaultAdapter()
+    var isBluetoothEnabled by rememberSaveable { mutableStateOf(false) }
 
     if (bluetoothAdapter == null) {
         Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center) {
@@ -38,13 +39,18 @@ fun ScanDevicesScreen(navController: NavController) {
         val activityResultLauncher = rememberLauncherForActivityResult(
             contract = ActivityResultContracts.StartActivityForResult()
         ) { result ->
-            Log.d("hello","result code ${result.resultCode}")
+            when (result.resultCode) {
+                -1 -> isBluetoothEnabled = true
+                else -> isBluetoothEnabled = false
+            }
 
         }
         val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
         SideEffect {
             activityResultLauncher.launch(enableBtIntent)
         }
+    } else {
+        isBluetoothEnabled = true
     }
 
     Scaffold(
@@ -53,6 +59,12 @@ fun ScanDevicesScreen(navController: NavController) {
         }
     )
     {
+        if (!isBluetoothEnabled) {
+            Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.SpaceAround) {
+                Text("Please enable bluetooth")
+            }
+            return@Scaffold
+        }
 
         Column {
             // button row
