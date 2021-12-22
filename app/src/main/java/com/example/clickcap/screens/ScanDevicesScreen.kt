@@ -2,6 +2,7 @@ package com.example.clickcap.screens
 
 import android.Manifest
 import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothDevice
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -27,7 +28,7 @@ import com.example.clickcap.constants.ScreenNames
 fun ScanDevicesScreen(navController: NavController) {
     val bluetoothAdapter: BluetoothAdapter? = BluetoothAdapter.getDefaultAdapter()
     var isBluetoothEnabled by rememberSaveable { mutableStateOf(false) }
-
+    val context = LocalContext.current
     if (bluetoothAdapter == null) {
         Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center) {
             Text("Unfortunately, you need Bluetooth on your device for the app to work!")
@@ -61,9 +62,20 @@ fun ScanDevicesScreen(navController: NavController) {
     {
         if (!isBluetoothEnabled) {
             Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.SpaceAround) {
-                Text("Please enable bluetooth")
+                Text("Please enable bluetooth and allow location access")
             }
             return@Scaffold
+        }
+
+        // check & ask for location permission
+        val isLocationGranted = context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        if (!isLocationGranted) {
+            val requestLocationResultLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { result ->
+                if (!result) isBluetoothEnabled = false
+            }
+            SideEffect {
+                requestLocationResultLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+            }
         }
 
         Column {
@@ -75,7 +87,11 @@ fun ScanDevicesScreen(navController: NavController) {
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Button(onClick = { /*TODO*/ }) {
+                Button(onClick = {
+                    getBluetoothBondedDevices(bluetoothAdapter)
+                    val hasStartedDiscovery = bluetoothAdapter.startDiscovery()
+                    Log.d("hello","start device discovery: $hasStartedDiscovery")
+                }) {
                     Row {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_baseline_bluetooth_24),
@@ -96,5 +112,13 @@ fun ScanDevicesScreen(navController: NavController) {
             LazyColumn(content = {})
 
         }
+    }
+}
+
+fun getBluetoothBondedDevices(bluetoothAdapter: BluetoothAdapter?) {
+    val pairedDevices: Set<BluetoothDevice>? = bluetoothAdapter?.bondedDevices
+    pairedDevices?.forEach { device ->
+        val deviceName = device.name
+        val deviceHardwareAddress = device.address // MAC address
     }
 }
