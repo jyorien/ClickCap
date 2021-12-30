@@ -1,5 +1,10 @@
 package com.example.clickcap.screens
 
+import ReadBluetoothService
+import android.os.Handler
+import android.os.Looper
+import android.os.Message
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.Button
 import androidx.compose.material.Scaffold
@@ -13,11 +18,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.clickcap.MainViewModel
 import com.example.clickcap.composables.ClickAppBar
 
 @Composable
-fun ReadingScreen(navController: NavController, currentEye: String = "LEFT", readingIndex: Int = 1) {
+fun ReadingScreen(navController: NavController, currentEye: String = "LEFT", readingIndex: Int = 1, viewModel: MainViewModel) {
     val currentReading by remember { mutableStateOf(0.0) }
+    val mHandler = object : Handler(Looper.getMainLooper()) {
+        override fun handleMessage(msg: Message) {
+            super.handleMessage(msg)
+
+        }
+    }
+    val readBluetoothService = ReadBluetoothService(mHandler)
+
     Scaffold(
         topBar = { ClickAppBar() }
     ) {
@@ -40,5 +54,7 @@ fun ReadingScreen(navController: NavController, currentEye: String = "LEFT", rea
             }
         }
     }
+
+
 
 }

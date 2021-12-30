@@ -14,6 +14,7 @@ import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -31,9 +32,10 @@ class MainActivity : ComponentActivity() {
                 // A surface container using the 'background' color from the theme
                 Surface(color = MaterialTheme.colors.background) {
                     val navController = rememberNavController()
+                    val viewModel = viewModel<MainViewModel>()
                     NavHost(navController = navController, startDestination = ScreenNames.ScanScreen) {
-                        composable(ScreenNames.ScanScreen) { ScanDevicesScreen(navController) }
-                        composable(ScreenNames.ReadingScreen) { ReadingScreen(navController) }
+                        composable(ScreenNames.ScanScreen) { ScanDevicesScreen(navController, viewModel) }
+                        composable(ScreenNames.ReadingScreen) { ReadingScreen(navController, viewModel = viewModel) }
                     }
                 }
             }

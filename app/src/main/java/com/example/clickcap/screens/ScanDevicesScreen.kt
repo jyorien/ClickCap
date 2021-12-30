@@ -3,6 +3,7 @@ package com.example.clickcap.screens
 import android.Manifest
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothSocket
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -26,13 +27,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
+import com.example.clickcap.MainViewModel
 import com.example.clickcap.R
 import com.example.clickcap.composables.ClickAppBar
 import com.example.clickcap.composables.DeviceCard
+import com.example.clickcap.constants.Constants
 import com.example.clickcap.constants.ScreenNames
+import java.io.IOException
+import java.util.*
 
 @Composable
-fun ScanDevicesScreen(navController: NavController) {
+fun ScanDevicesScreen(navController: NavController, viewModel: MainViewModel) {
     val bondedDevicesList by remember { mutableStateOf(mutableListOf<BluetoothDevice>().toMutableStateList())}
     val bluetoothAdapter: BluetoothAdapter? = BluetoothAdapter.getDefaultAdapter()
     var isBluetoothEnabled by rememberSaveable { mutableStateOf(false) }
@@ -152,6 +157,12 @@ fun ScanDevicesScreen(navController: NavController) {
                         DeviceCard(device = device, modifier = Modifier.padding(horizontal = 4.dp).clickable {
                             val isConnected = device.createBond()
                             Log.d("hello","isConnected: $isConnected")
+                            if (isConnected)  {
+                                val connectThread = ConnectThread(device, bluetoothAdapter) {
+                                    viewModel.bluetoothSocket = it
+                                }
+                                connectThread.start()
+                            }
                         })
                     }
                 }
@@ -218,6 +229,34 @@ fun BluetoothBroadcastReceiver(
         // When the effect leaves the Composition, remove the callback
         onDispose {
             context.unregisterReceiver(broadcast)
+        }
+    }
+}
+
+private class ConnectThread(device: BluetoothDevice, val bluetoothAdapter: BluetoothAdapter?, val getSocket: (BluetoothSocket) -> Unit) : Thread() {
+
+    private val mmSocket: BluetoothSocket? by lazy(LazyThreadSafetyMode.NONE) {
+        device.createRfcommSocketToServiceRecord(Constants.CLICKCAP_UUID)
+    }
+
+    public override fun run() {
+        // Cancel discovery because it otherwise slows down the connection.
+        bluetoothAdapter?.cancelDiscovery()
+
+        mmSocket?.let { socket ->
+            // Connect to the remote device through the socket. This call blocks
+            // until it succeeds or throws an exception.
+            socket.connect()
+            getSocket(socket)
+        }
+    }
+
+    // Closes the client socket and causes the thread to finish.
+    fun cancel() {
+        try {
+            mmSocket?.close()
+        } catch (e: IOException) {
+            Log.e("hello", "Could not close the client socket", e)
         }
     }
 }
